@@ -28,3 +28,7 @@ Every payload has `session_id`, `transcript_path`, `cwd`, `hook_event_name`. Too
 ## T3 thread lookup
 
 `t3 thread list --project <cwd> --json` returns the project's threads. Threads started with `t3 thread start` run in the project folder, and `t3 thread show --json` reports `thread.worktreePath: null` for them. The reporter matches a worktree thread by `worktreePath` equal to the session cwd or git toplevel, and otherwise accepts a lone running thread without a worktree. Two concurrent folder-mode threads in one project cannot be told apart, so both stay unlinked.
+
+## `t3-thread://` links
+
+`open "t3-thread://v1/<threadId>"` fails on macOS with `kLSApplicationNotFoundErr`: no app claims the scheme. T3 Code (Nightly 0.1.3) registers only `t3code://` and `t3code-dev://` with the OS. The `t3-thread://v1/<threadId>` form is handled inside T3's own markdown renderer, which turns such links in chat messages into thread links showing the current title (found in the app bundle and in the T3 MCP tool instructions). So the panel's "Open in T3" link is correct for T3 chat but does nothing when clicked in a browser. The only OS-level route found is `t3code://app`, with no thread parameter. A working jump from the panel needs T3 to expose a thread deep link, or the panel to call `t3 app`.
