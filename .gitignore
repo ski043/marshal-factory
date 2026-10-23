@@ -9,3 +9,5 @@ next-env.d.ts
 .vercel
 /coverage
 /out/
+.neon
+.neon
