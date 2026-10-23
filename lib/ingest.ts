@@ -156,7 +156,8 @@ async function applyAgentLaunched(
         agent_id: e.agentId,
         status: settle(real.status, linked.status),
         ended_at: real.ended_at ?? linked.ended_at,
-        model: real.model ?? linked.model,
+        // The stop's model is a resolved id; the start's is the requested alias.
+        model: linked.model ?? real.model,
         started_at:
           real.started_at < linked.started_at ? real.started_at : linked.started_at,
         input_tokens: Math.max(real.input_tokens, linked.input_tokens),
@@ -212,7 +213,8 @@ async function applyAgentStop(
     .set({
       status: settle(existing.status, e.status),
       ended_at: existing.ended_at ?? when(e.at),
-      model: existing.model ?? e.model ?? e.usage.model,
+      // The stop carries the resolved model id; the start only had the requested alias.
+      model: e.model ?? existing.model,
       input_tokens: Math.max(existing.input_tokens, e.usage.input),
       output_tokens: Math.max(existing.output_tokens, e.usage.output),
       cache_read_tokens: Math.max(existing.cache_read_tokens, e.usage.cacheRead),

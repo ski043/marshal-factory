@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "bun \"${CLAUDE_PROJECT_DIR}/hooks/report.ts\"", "async": true, "timeout": 20 }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Agent", "hooks": [{ "type": "command", "command": "bun \"${CLAUDE_PROJECT_DIR}/hooks/report.ts\"", "async": true, "timeout": 20 }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Agent", "hooks": [{ "type": "command", "command": "bun \"${CLAUDE_PROJECT_DIR}/hooks/report.ts\"", "async": true, "timeout": 20 }] }
+    ],
+    "SubagentStop": [
+      { "hooks": [{ "type": "command", "command": "bun \"${CLAUDE_PROJECT_DIR}/hooks/report.ts\"", "async": true, "timeout": 20 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "bun \"${CLAUDE_PROJECT_DIR}/hooks/report.ts\"", "async": true, "timeout": 20 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "bun \"${CLAUDE_PROJECT_DIR}/hooks/report.ts\"", "async": true, "timeout": 20 }] }
+    ]
+  }
+}
