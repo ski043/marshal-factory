@@ -9,11 +9,12 @@ type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 type AgentRow = typeof agents.$inferSelect;
 type RunStatus = (typeof runs.$inferSelect)["status"];
 
-const RUN_STATUS: Record<FactoryEvent["kind"], RunStatus> = {
+// A background agent can finish after its turn ended, so agent_stop leaves the status alone.
+const RUN_STATUS: Record<FactoryEvent["kind"], RunStatus | null> = {
   session_start: "active",
   agent_start: "active",
   agent_launched: "active",
-  agent_stop: "active",
+  agent_stop: null,
   turn_stop: "idle",
   session_end: "ended",
 };
@@ -60,7 +61,7 @@ async function upsertRun(tx: Tx, event: FactoryEvent) {
     .insert(runs)
     .values({
       session_id: event.sessionId,
-      status: RUN_STATUS[event.kind],
+      status: RUN_STATUS[event.kind] ?? "active",
       started_at: at,
       last_event_at: at,
       ...meta,
@@ -73,9 +74,13 @@ async function upsertRun(tx: Tx, event: FactoryEvent) {
           `greatest(runs."last_event_at", excluded."last_event_at")`,
         ),
         // A late event must not drag the status back past a newer one.
-        status: sql.raw(
-          `case when excluded."last_event_at" >= runs."last_event_at" then excluded."status" else runs."status" end`,
-        ),
+        ...(RUN_STATUS[event.kind]
+          ? {
+              status: sql.raw(
+                `case when excluded."last_event_at" >= runs."last_event_at" then excluded."status" else runs."status" end`,
+              ),
+            }
+          : {}),
         ...Object.fromEntries(
           ["cwd", "repo", "branch", "issue_key", "t3_thread_id", "title", "model"]
             .filter((name) => name in meta)
@@ -134,7 +139,8 @@ async function applyAgentStart(
         description: sql.raw(
           `coalesce(excluded."description", agents."description")`,
         ),
-        model: sql.raw(`coalesce(excluded."model", agents."model")`),
+        // An existing row came from a stop or launch, whose model is the resolved id, not the alias.
+        model: sql.raw(`coalesce(agents."model", excluded."model")`),
       },
     });
 }

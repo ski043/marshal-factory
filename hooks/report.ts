@@ -8,7 +8,8 @@ import type { FactoryEvent, Usage } from "../lib/events";
 
 const run = promisify(execFile);
 
-const T3 = "/Users/jan/.t3/bin/t3";
+// T3 exports its CLI path to the sessions it starts.
+const T3 = process.env.T3CODE_CLI_PATH ?? "t3";
 const FETCH_TIMEOUT_MS = 4000;
 const SUBPROCESS_TIMEOUT_MS = 3000;
 const LAST_MESSAGE_MAX = 500;
