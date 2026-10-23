@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Marshal Factory — Supervision panel (mockup)</title>
+<style>
+  :root {
+    --bg: #0b0c0f; --panel: #111318; --panel-2: #161922; --line: #23262f; --line-2: #2d313c;
+    --text: #e7e9ee; --muted: #8a90a0; --faint: #5c6270;
+    --accent: #7c8cff; --green: #3ecf8e; --amber: #f5b14c; --red: #f0616d; --cyan: #4cc9f0; --violet: #b18cff;
+    --radius: 10px;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.45; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  nav { border-right: 1px solid var(--line); padding: 18px 12px; display: flex; flex-direction: column; gap: 4px; background: #0d0e12; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; font-weight: 600; letter-spacing: .2px; }
+  .logo { width: 22px; height: 22px; border-radius: 6px; background: conic-gradient(from 210deg, var(--accent), var(--violet), var(--cyan), var(--accent)); }
+  .nav-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-radius: 7px; color: var(--muted); cursor: pointer; }
+  .nav-item:hover { background: var(--panel-2); color: var(--text); }
+  .nav-item.active { background: var(--panel-2); color: var(--text); }
+  .badge { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--line); color: var(--muted); }
+  .badge.hot { background: rgba(245,177,76,.15); color: var(--amber); }
+  .nav-sep { height: 1px; background: var(--line); margin: 12px 4px; }
+  .live { display: flex; align-items: center; gap: 8px; color: var(--muted); padding: 8px 10px; margin-top: auto; }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(62,207,142,.6); animation: pulse 2s infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 7px rgba(62,207,142,0); } 100% { box-shadow: 0 0 0 0 rgba(62,207,142,0); } }
+
+  main { display: flex; flex-direction: column; min-width: 0; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .crumbs { color: var(--muted); }
+  .btn { background: var(--panel-2); border: 1px solid var(--line-2); color: var(--text); padding: 6px 11px; border-radius: 7px; font: inherit; cursor: pointer; }
+  .btn:hover { border-color: #3a3f4c; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #0b0c0f; font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--line); border-bottom: 1px solid var(--line); }
+  .stat { background: var(--bg); padding: 14px 22px; }
+  .stat .k { color: var(--muted); font-size: 12px; }
+  .stat .v { font-size: 20px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .stat .d { font-size: 11px; color: var(--faint); }
+
+  .content { display: grid; grid-template-columns: 1fr 420px; min-height: 0; flex: 1; }
+  .board { overflow-x: auto; padding: 18px 22px; display: flex; gap: 12px; align-items: flex-start; }
+  .col { flex: 0 0 236px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; max-height: calc(100vh - 190px); }
+  .col-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .col-h .count { margin-left: auto; color: var(--faint); }
+  .cards { padding: 8px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; cursor: pointer; transition: border-color .15s, transform .15s; }
+  .card:hover { border-color: var(--line-2); transform: translateY(-1px); }
+  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .card .id { color: var(--faint); }
+  .card .t { margin: 3px 0 8px; font-weight: 500; }
+  .card .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 11px; }
+  .chip { padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line-2); color: var(--muted); font-size: 11px; }
+  .chip.opus { color: var(--violet); border-color: rgba(177,140,255,.35); }
+  .chip.sonnet { color: var(--cyan); border-color: rgba(76,201,240,.35); }
+  .chip.bug { color: var(--red); border-color: rgba(240,97,109,.35); }
+  .chip.feat { color: var(--green); border-color: rgba(62,207,142,.35); }
+  .bar { height: 3px; background: var(--line); border-radius: 2px; margin-top: 9px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); }
+  .spin { width: 10px; height: 10px; border: 1.5px solid var(--line-2); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  aside { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; max-height: calc(100vh - 136px); }
+  .run-h { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+  .run-h .id { color: var(--faint); }
+  .run-h h2 { font-size: 15px; margin: 4px 0 10px; }
+  .run-h .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .sec { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .sec h3 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--faint); font-weight: 600; }
+
+  .timeline { position: relative; margin-left: 6px; }
+  .step { position: relative; padding: 0 0 12px 20px; }
+  .step::before { content: ""; position: absolute; left: 3px; top: 12px; bottom: -2px; width: 1px; background: var(--line-2); }
+  .step:last-child::before { display: none; }
+  .step .n { position: absolute; left: -1px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
+  .step.done .n { background: var(--green); }
+  .step.now .n { background: var(--accent); box-shadow: 0 0 0 4px rgba(124,140,255,.18); }
+  .step .s { display: flex; justify-content: space-between; }
+  .step .s b { font-weight: 500; }
+  .step .s span { color: var(--faint); }
+  .step p { margin: 2px 0 0; color: var(--muted); }
+  .step.todo b { color: var(--faint); }
+
+  .tree { display: flex; flex-direction: column; gap: 2px; }
+  .node { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; }
+  .node:hover { background: var(--panel-2); }
+  .node .name { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .node .name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .node .tok { color: var(--faint); font-variant-numeric: tabular-nums; }
+  .indent-1 { padding-left: 24px; } .indent-2 { padding-left: 42px; }
+  .st { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .st.run { background: var(--accent); } .st.ok { background: var(--green); } .st.fail { background: var(--red); }
+
+  .gates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gate { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; background: var(--panel-2); }
+  .ok-t { color: var(--green); } .wait-t { color: var(--amber); } .fail-t { color: var(--red); }
+
+  .feed { display: flex; flex-direction: column; gap: 6px; }
+  .ev { display: grid; grid-template-columns: 54px 1fr; gap: 8px; color: var(--muted); }
+  .ev .ts { color: var(--faint); }
+  .ev b { color: var(--text); font-weight: 500; }
+  .note { color: var(--faint); font-size: 11px; padding: 10px 18px 18px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <div class="brand"><div class="logo"></div>Marshal Factory</div>
+    <div class="nav-item active">Board <span class="badge">14</span></div>
+    <div class="nav-item">Inbox <span class="badge hot">2</span></div>
+    <div class="nav-item">Runs <span class="badge">31</span></div>
+    <div class="nav-item">Agents</div>
+    <div class="nav-item">Metrics</div>
+    <div class="nav-sep"></div>
+    <div class="nav-item">Other activity <span class="badge">3</span></div>
+    <div class="nav-item">Settings</div>
+    <div class="live"><span class="pulse"></span> Live · 6 sessions</div>
+  </nav>
+
+  <main>
+    <header>
+      <div><span class="crumbs">marshal / </span><h1 style="display:inline">Factory board</h1></div>
+      <div style="display:flex; gap:8px">
+        <button class="btn">Filter</button>
+        <button class="btn">Pause intake</button>
+        <button class="btn primary">Poll Linear now</button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat"><div class="k">In flight</div><div class="v">6</div><div class="d">across 2 repos</div></div>
+      <div class="stat"><div class="k">Waiting on you</div><div class="v" style="color:var(--amber)">2</div><div class="d">1 merge · 1 escalation</div></div>
+      <div class="stat"><div class="k">Merged · 7d</div><div class="v">11</div><div class="d">merge rate 79%</div></div>
+      <div class="stat"><div class="k">Spend today</div><div class="v">$41.20</div><div class="d">$3.75 per merged PR</div></div>
+      <div class="stat"><div class="k">Reverts · 30d</div><div class="v">1</div><div class="d">LIN-198</div></div>
+    </section>
+
+    <div class="content">
+      <div class="board" id="board"></div>
+      <aside id="detail"></aside>
+    </div>
+  </main>
+</div>
+
+<script>
+const COLS = [
+  { key: "queued", label: "Queued", color: "#5c6270" },
+  { key: "triage", label: "Triage", color: "#4cc9f0" },
+  { key: "investigating", label: "Investigating", color: "#b18cff" },
+  { key: "implementing", label: "Implementing", color: "#7c8cff" },
+  { key: "verifying", label: "Verifying", color: "#f5b14c" },
+  { key: "pr", label: "PR · CI", color: "#7c8cff" },
+  { key: "waiting", label: "Waiting on you", color: "#f5b14c" },
+  { key: "merged", label: "Merged", color: "#3ecf8e" },
+];
+
+const RUNS = [
+  { id: "LIN-231", title: "Notifications badge doesn't clear after read", stage: "queued", type: "bug" },
+  { id: "LIN-229", title: "Add dark mode toggle to settings", stage: "queued", type: "feat" },
+  { id: "LIN-227", title: "Webhook retries fire twice on 502", stage: "triage", type: "bug", model: "sonnet", cost: 0.12, live: true },
+  { id: "LIN-224", title: "Search results lose filter on back nav", stage: "investigating", type: "bug", model: "opus", cost: 1.84, agents: 3, live: true },
+  { id: "LIN-218", title: "CSV export drops rows containing commas", stage: "implementing", type: "bug", model: "opus", cost: 4.31, agents: 2, progress: 55, live: true, selected: true },
+  { id: "LIN-215", title: "Team invite email: add expiry date", stage: "implementing", type: "feat", model: "sonnet", cost: 2.02, agents: 1, progress: 30, live: true },
+  { id: "LIN-212", title: "Billing page slow for large orgs", stage: "verifying", type: "bug", model: "opus", cost: 7.90, agents: 6, live: true },
+  { id: "LIN-209", title: "Rate-limit public API keys", stage: "pr", type: "feat", model: "opus", cost: 9.12, pr: "#87", ci: "running" },
+  { id: "LIN-204", title: "Upgrade zod to v4 in api package", stage: "waiting", type: "feat", model: "sonnet", cost: 3.40, pr: "#85", reason: "Merge ready" },
+  { id: "LIN-201", title: "Session refresh race on mobile", stage: "waiting", type: "bug", model: "opus", cost: 11.70, reason: "Escalated · 3 fix rounds" },
+  { id: "LIN-198", title: "Fix timezone on invoice PDF", stage: "merged", type: "bug", model: "sonnet", cost: 2.10, pr: "#81" },
+  { id: "LIN-195", title: "Paginate audit log endpoint", stage: "merged", type: "feat", model: "sonnet", cost: 3.95, pr: "#80" },
+];
+
+const DETAIL = {
+  "LIN-218": {
+    playbook: "bug-fix", thread: "t3-thread://v1/8f2c41e0-…", branch: "factory/LIN-218", session: "d23816e1",
+    timeline: [
+      { s: "Queued", t: "09:02", d: "Picked up by Linear poller", state: "done" },
+      { s: "Triage", t: "09:03", d: "Bug · low risk · in scope (csv/export.ts)", state: "done" },
+      { s: "Investigating", t: "09:05", d: "Root cause: naive split(',') in parseRow", state: "done" },
+      { s: "Implementing", t: "09:14", d: "Red test added · switching to RFC 4180 parser", state: "now" },
+      { s: "Verifying", t: "", d: "swarm · 4 lanes", state: "todo" },
+      { s: "PR · CI", t: "", d: "", state: "todo" },
+      { s: "Waiting on you", t: "", d: "", state: "todo" },
+    ],
+    agents: [
+      { n: "root · poteto-mode", m: "opus", tok: "182k", c: "$2.94", st: "run", lvl: 0 },
+      { n: "how · explorer", m: "sonnet", tok: "41k", c: "$0.31", st: "ok", lvl: 1 },
+      { n: "why · investigator", m: "sonnet", tok: "38k", c: "$0.29", st: "ok", lvl: 1 },
+      { n: "implementer · bug-fix", m: "opus", tok: "64k", c: "$0.77", st: "run", lvl: 1 },
+      { n: "tdd · red test", m: "sonnet", tok: "9k", c: "$0.07", st: "ok", lvl: 2 },
+    ],
+    gates: [ ["Red test", "ok"], ["Typecheck", "wait"], ["CI", "wait"], ["Swarm verdict", "wait"] ],
+    feed: [
+      ["09:16:42", "<b>implementer</b> Edit lib/csv/parse.ts"],
+      ["09:16:20", "<b>implementer</b> Bash bun test csv — 1 failed (expected)"],
+      ["09:15:58", "<b>tdd</b> SubagentStop · red test committed"],
+      ["09:14:03", "<b>root</b> factory_report → implementing"],
+      ["09:13:51", "<b>why</b> SubagentStop · root cause found"],
+    ],
+  },
+};
+
+function chip(cls, txt) { return `<span class="chip ${cls}">${txt}</span>`; }
+
+function renderBoard() {
+  document.getElementById("board").innerHTML = COLS.map(col => {
+    const items = RUNS.filter(r => r.stage === col.key);
+    return `<div class="col">
+      <div class="col-h"><span class="dot" style="background:${col.color}"></span>${col.label}<span class="count">${items.length}</span></div>
+      <div class="cards">${items.map(card).join("")}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".card").forEach(el => el.onclick = () => select(el.dataset.id));
+}
+
+function card(r) {
+  const bits = [chip(r.type === "bug" ? "bug" : "feat", r.type)];
+  if (r.model) bits.push(chip(r.model, r.model));
+  if (r.agents) bits.push(`<span>${r.agents} agents</span>`);
+  if (r.cost) bits.push(`<span class="mono">$${r.cost.toFixed(2)}</span>`);
+  if (r.pr) bits.push(`<span class="mono">${r.pr}${r.ci ? " · CI " + r.ci : ""}</span>`);
+  if (r.reason) bits.push(`<span style="color:var(--amber)">${r.reason}</span>`);
+  return `<div class="card ${r.selected ? "selected" : ""}" data-id="${r.id}">
+    <div class="id mono">${r.live ? '<span class="spin"></span> ' : ""}${r.id}</div>
+    <div class="t">${r.title}</div>
+    <div class="meta">${bits.join("")}</div>
+    ${r.progress ? `<div class="bar"><i style="width:${r.progress}%"></i></div>` : ""}
+  </div>`;
+}
+
+function select(id) {
+  RUNS.forEach(r => r.selected = r.id === id);
+  renderBoard();
+  renderDetail(id);
+}
+
+function renderDetail(id) {
+  const r = RUNS.find(x => x.id === id);
+  const d = DETAIL[id];
+  const el = document.getElementById("detail");
+  if (!d) {
+    el.innerHTML = `<div class="run-h"><div class="id mono">${r.id}</div><h2>${r.title}</h2>
+      <div class="row">${chip(r.type === "bug" ? "bug" : "feat", r.type)} ${r.model ? chip(r.model, r.model) : ""}</div></div>
+      <div class="note">Mockup data only exists for LIN-218. Click it to see the full run view.</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="run-h">
+      <div class="id mono">${r.id} · ${d.branch}</div>
+      <h2>${r.title}</h2>
+      <div class="row">
+        ${chip("bug", r.type)} ${chip("", "playbook: " + d.playbook)} <span class="mono" style="color:var(--muted)">$${r.cost.toFixed(2)}</span>
+        <span style="margin-left:auto; display:flex; gap:6px">
+          <a class="btn" href="${d.thread}" style="text-decoration:none">Open in T3 ↗</a>
+          <button class="btn">Linear ↗</button>
+        </span>
+      </div>
+    </div>
+    <div class="sec"><h3>Timeline</h3><div class="timeline">
+      ${d.timeline.map(s => `<div class="step ${s.state}"><span class="n"></span>
+        <div class="s"><b>${s.s}</b><span class="mono">${s.t}</span></div>${s.d ? `<p>${s.d}</p>` : ""}</div>`).join("")}
+    </div></div>
+    <div class="sec"><h3>Agents</h3><div class="tree">
+      ${d.agents.map(a => `<div class="node indent-${a.lvl}">
+        <div class="name"><span class="st ${a.st}"></span><span>${a.n}</span></div>
+        ${chip(a.m, a.m)}<span class="tok mono">${a.tok} · ${a.c}</span></div>`).join("")}
+    </div></div>
+    <div class="sec"><h3>Gates</h3><div class="gates">
+      ${d.gates.map(([g, s]) => `<div class="gate"><span>${g}</span><span class="${s}-t">${s === "ok" ? "passed" : s === "wait" ? "pending" : "failed"}</span></div>`).join("")}
+    </div></div>
+    <div class="sec"><h3>Live events</h3><div class="feed mono">
+      ${d.feed.map(([t, e]) => `<div class="ev"><span class="ts">${t}</span><span>${e}</span></div>`).join("")}
+    </div></div>
+    <div class="note">Mockup. Stage and timeline come from factory_report (Phase 4). Agents, tokens, cost and live events come from Claude Code hooks (Phase 2).</div>`;
+}
+
+renderBoard();
+renderDetail("LIN-218");
+</script>
+</body>
+</html>
