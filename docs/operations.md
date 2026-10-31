@@ -251,9 +251,10 @@ Slack is one more front door to the panel's **New job**: `/factory` and the **Se
 - **Sign-in.** Neon Auth (`auth: true` in `neon.ts`) holds the users. `proxy.ts` sends a request without a session to `/auth/sign-in`, answers `/api/*` with 401 (but `/api/slack/*`, which checks Slack's signature instead), and shows a 403 page to any account that is not the owner. The owner is an account whose email is in `FACTORY_OWNER_EMAILS` (comma-separated, case-insensitive) and verified. An unset or empty list admits nobody. `lib/live-queries.ts` checks the owner again before it seals a query, so only the owner ever holds a Realtime credential.
 - **Owner account.** Sign-up stays off, and an email counts only after its owner enters the code Neon Auth mails. To create the owner on `main`:
   1. Turn on sign-up with code verification: `neon neon-auth config email-password update --branch main --enabled --email-verification-method otp --require-email-verification --send-verification-email-on-sign-up --send-verification-email-on-sign-in --auto-sign-in-after-verification --disable-sign-up false`.
-  2. Open `/auth/sign-up` on the panel and create the account with an address from `FACTORY_OWNER_EMAILS`.
-  3. Enter the 6-digit code from the email (sender `auth@mail.myneon.app`, valid 15 minutes). The panel signs you in and opens **Jobs**.
-  4. Turn sign-up off again: `neon neon-auth config email-password update --branch main --disable-sign-up true`.
+  2. Trust the panel's origin, or sign-up fails with "Invalid origin": `neon neon-auth domain add https://<your panel domain> --branch main`, for example `https://marshal-factory.vercel.app`.
+  3. Open `/auth/sign-up` on the panel and create the account with an address from `FACTORY_OWNER_EMAILS`.
+  4. Enter the 6-digit code from the email (sender `auth@mail.myneon.app`, valid 15 minutes). The panel signs you in and opens **Jobs**.
+  5. Turn sign-up off again: `neon neon-auth config email-password update --branch main --disable-sign-up true`.
 
   An account that signs in before it is verified gets a new code on the sign-in page.
 - **Environment.** The panel needs `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` (`openssl rand -base64 32`), `NEON_REALTIME_URL`, `NEXT_PUBLIC_NEON_REALTIME_URL`, `NEON_REALTIME_SECRET` and `FACTORY_OWNER_EMAILS`. `next build` fails without the cookie secret. A preview build needs none of the three Realtime variables.
