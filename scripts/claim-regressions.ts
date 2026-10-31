@@ -58,13 +58,16 @@ try {
   const quantiles = (ms: number[]) => {
     const sorted = [...ms].sort((x, y) => x - y);
     const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))]!;
-    return { median: at(0.5), p95: at(0.95), max: at(1) };
+    return { median: at(0.5), p75: at(0.75), p95: at(0.95), max: at(1) };
   };
   const show = ({ median, p95, max }: ReturnType<typeof quantiles>) => `median ${median.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms, max ${max.toFixed(1)} ms`;
   const claims = quantiles(claimMs);
+  const floor = quantiles(pingMs);
   console.log(`racing claims: ${claimMs.length} calls, ${show(claims)}`);
-  console.log(`racing select 1, the network floor: ${pingMs.length} calls, ${show(quantiles(pingMs))}`);
-  assert.ok(claims.p95 <= 200, "racing claims stay within 200 ms at p95; the max is printed above");
+  console.log(`racing select 1, the network floor: ${pingMs.length} calls, ${show(floor)}`);
+  // Against the floor, not a fixed budget: far from the database, a lost packet adds a ~200 ms TCP
+  // retransmit to a tenth of the calls. A claim that waits on the other's lock slows half of them.
+  assert.ok(claims.p75 <= floor.p75 + 25, "three in four racing claims cost one round trip, as select 1 does; the numbers are printed above");
 
   const full = `${prefix}-full`;
   await db.insert(jobs).values([

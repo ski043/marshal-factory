@@ -126,6 +126,8 @@ const server = await serve(0, async (request) => {
     return Response.json(pullJson(p, read(p)));
   }
   if (/\/compare\//.test(path)) return Response.json({ behind_by: 7 });
+  // The same scripts at every ref, so a PR's package.json edit is a dependency bump, not a check change.
+  if (/^\/repos\/[^/]+\/[^/]+\/contents\/package\.json$/.test(path)) return Response.json({ content: Buffer.from(JSON.stringify({ scripts: { lint: "eslint" } })).toString("base64") });
   if ((m = /\/commits\/([^/]+)\/(check-runs|status)$/.exec(path))) {
     const checks = checksOf.get(m[1]!) ?? { runs: [checkRun("ci", "success"), checkRun("Cursor Bugbot", "neutral")], statuses: [] };
     if (m[2] === "check-runs") return Response.json({ total_count: checks.runs.length, check_runs: checks.runs });

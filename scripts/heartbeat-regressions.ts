@@ -193,7 +193,8 @@ try {
       slack: async () => inventoryA.slack,
     },
     inventoryMs: 600_000,
-    timeoutMs: 200,
+    // Room for the beat's database writes, which a resent packet on a distant link stretches past 200 ms.
+    timeoutMs: 1_000,
     log: (event, detail) => events.push({ event, detail }),
     now: () => clock,
   });
