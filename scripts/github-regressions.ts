@@ -94,6 +94,11 @@ const stub = await serve(0, async (request) => {
       return Response.json({ message: "Bad credentials" }, { status: 401 });
     }
     if (url.pathname === "/repos/o/r/pulls/5") return Response.json(pulls[1]);
+    const merging = { allow_merge_commit: true, allow_squash_merge: false, allow_rebase_merge: false };
+    if (url.pathname === "/repos/o/app-token") return Response.json({ ...merging, permissions: { admin: false, maintain: false, push: false, triage: false, pull: false } });
+    if (url.pathname === "/repos/o/read-only") return Response.json({ ...merging, permissions: { admin: false, maintain: false, push: false, triage: true, pull: true } });
+    if (url.pathname === "/repos/o/writer") return Response.json({ ...merging, permissions: { push: true, pull: true } });
+    if (url.pathname === "/repos/o/no-permissions") return Response.json(merging);
     const pull = /^\/repos\/o\/r\/pulls\/(\d+)(\/merge)?$/.exec(url.pathname);
     if (pull && !pull[2]) return pulls[Number(pull[1])] ? Response.json(pulls[Number(pull[1])]) : Response.json({ message: "Not Found" }, { status: 404 });
     if (pull && request.method === "PUT") {
@@ -153,6 +158,10 @@ try {
   assert.deepEqual(await client.pullRequest(url(2)), { state: "open", mergeable: "conflicting", headSha: "h2", title: "PR 2" }, "false mergeable is conflicting");
   assert.equal((await client.pullRequest(url(3))).state, "merged", "a closed PR with merged_at is merged");
   await assert.rejects(client.pullRequest(url(9)), /answered 404: Not Found/);
+  assert.deepEqual(await client.repoMerging("o/app-token"), { method: "merge", canPush: true }, "every permission false, pull included, says nothing about an App token, which just read the repo");
+  assert.deepEqual(await client.repoMerging("o/read-only"), { method: "merge", canPush: false }, "a token that reads but cannot push is refused before the merge");
+  assert.deepEqual(await client.repoMerging("o/writer"), { method: "merge", canPush: true });
+  assert.deepEqual(await client.repoMerging("o/no-permissions"), { method: "merge", canPush: true }, "no permissions object is no reason to refuse");
   const read = seen.find((s) => s.path === "/repos/o/r/pulls/1")!;
   assert.deepEqual([read.auth, read.version], ["Bearer ghs_stub", "2026-03-10"], "calls carry the installation token and the API version");
 

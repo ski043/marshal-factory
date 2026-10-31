@@ -394,10 +394,14 @@ export function pullsClient({ api, tokens }: { api: string; tokens: TokenSource 
           allow_squash_merge: z.boolean().optional(),
           allow_merge_commit: z.boolean().optional(),
           allow_rebase_merge: z.boolean().optional(),
-          permissions: z.object({ push: z.boolean().optional() }).optional(),
+          permissions: z.object({ push: z.boolean().optional(), pull: z.boolean().optional() }).optional(),
         })
         .parse(json);
-      return { method: mergeMethodOf(flags), canPush: flags.permissions?.push !== false };
+      // GitHub can answer an installation token's read with every permission false, pull included,
+      // though the token just read the repo: such an object says nothing about the token, whose
+      // contents grant is what a merge needs. A merge it cannot make is refused, and handed over, then.
+      const describesToken = flags.permissions?.pull !== false;
+      return { method: mergeMethodOf(flags), canPush: !describesToken || flags.permissions?.push !== false };
     },
 
     /** The commit's checks with the names of those that failed, Bugbot's run aside. */
