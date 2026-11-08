@@ -319,3 +319,5 @@ Work in a separate clone or worktree, never in the live checkout. Run `bun dev` 
 - [docs/operations.md](docs/operations.md): how each part behaves, including the runner, write-back, retries, spend, cleanup, the watchdog, sign-in and deploys.
 - [playbooks/factory.md](playbooks/factory.md): what each factory thread is told to do.
 - [docs/research/](docs/research/): background reports from the initial investigation.
+
+<!-- Windows runner port verified end to end by factory run REL-5. -->
