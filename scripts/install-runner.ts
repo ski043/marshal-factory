@@ -4,7 +4,9 @@ import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 
 // Installs the runner as a launchd LaunchAgent: started at login, restarted when it exits, logging
-// to ~/Library/Logs/marshal-factory/runner.log. Re-running with nothing changed leaves it alone.
+// to ~/Library/Logs/marshal-factory/runner.log. On Linux it is the systemd user service
+// marshal-factory-runner.service instead, logging to ~/.local/state/marshal-factory/runner.log.
+// Re-running with nothing changed leaves it alone.
 //   bun scripts/install-runner.ts [--uninstall]
 
 export const LABEL = "com.marshal-factory.runner";

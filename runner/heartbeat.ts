@@ -19,17 +19,26 @@ const RUNNER_DIR = join(import.meta.dirname, "..");
 const text = async (cmd: string, args: string[], cwd?: string) =>
   (await run(cmd, args, { cwd, timeout: 5_000, maxBuffer: 1024 * 1024 })).stdout;
 
-export type Machine = { id: string; name: string; idFrom: "config" | "ioreg" | "hostname" };
+export type Machine = { id: string; name: string; idFrom: "config" | "ioreg" | "machine-id" | "hostname" };
 
-/** Falls back to the host name when ioreg fails, so the runner starts instead of crash-looping under launchd. */
-export async function identify(override?: string): Promise<Machine> {
+/**
+ * macOS: the IOPlatformUUID from ioreg. Linux: /etc/machine-id. Falls back to the host name when
+ * neither is readable, so the runner starts instead of crash-looping under launchd or systemd.
+ */
+export async function identify(override?: string, machineIdPath = "/etc/machine-id"): Promise<Machine> {
   const name = (await text("scutil", ["--get", "ComputerName"]).then((out) => out.trim(), () => "")) || hostname();
   if (override) return { id: override, name, idFrom: "config" };
-  const uuid = await text("ioreg", ["-rd1", "-c", "IOPlatformExpertDevice"]).then(
-    (out) => /"IOPlatformUUID" = "([^"]+)"/.exec(out)?.[1],
-    () => undefined,
-  );
-  return uuid ? { id: uuid, name, idFrom: "ioreg" } : { id: `hostname:${hostname()}`, name, idFrom: "hostname" };
+  if (process.platform === "linux") {
+    const id = await readFile(machineIdPath, "utf8").then((out) => out.trim(), () => "");
+    if (/^[0-9a-f]{32}$/.test(id)) return { id, name, idFrom: "machine-id" };
+  } else {
+    const uuid = await text("ioreg", ["-rd1", "-c", "IOPlatformExpertDevice"]).then(
+      (out) => /"IOPlatformUUID" = "([^"]+)"/.exec(out)?.[1],
+      () => undefined,
+    );
+    if (uuid) return { id: uuid, name, idFrom: "ioreg" };
+  }
+  return { id: `hostname:${hostname()}`, name, idFrom: "hostname" };
 }
 
 let machine: Promise<Machine> | undefined;

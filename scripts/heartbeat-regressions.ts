@@ -9,7 +9,7 @@ const { db } = await import("../db/client");
 const { jobs, machines } = await import("../db/schema");
 const { isOnline, heartbeatSchema, inventorySchema, parseHeartbeat } = await import("../lib/machine");
 const { parseConnectStatus, readProjects } = await import("../lib/t3-state");
-const { collectHeartbeat, createBeat, identify, inventoryReporter, parseDf, parseOrigin, parseVmStat, writeHeartbeat, writeInventory } = await import("../runner/heartbeat");
+const { collectHeartbeat, createBeat, identify, inventoryReporter, parseDf, parseMeminfo, parseOrigin, parseVmStat, writeHeartbeat, writeInventory } = await import("../runner/heartbeat");
 const { claimLaunch, releaseLaunch } = await import("../runner/ops");
 const { linearJob } = await import("./fixtures");
 
@@ -28,6 +28,13 @@ assert.deepEqual(
 );
 assert.throws(() => parseVmStat("Mach Virtual Memory Statistics: (page size of 16384 by", 1), "garbled vm_stat throws");
 assert.throws(() => parseVmStat(fixture("vm_stat.txt").replace(/Pages inactive.*\n/, ""), 1), "vm_stat without a needed line throws");
+const meminfo = "MemTotal:       16303316 kB\nMemFree:          812344 kB\nMemAvailable:    9876544 kB\nBuffers:          201234 kB\n";
+assert.deepEqual(
+  parseMeminfo(meminfo, 16_694_595_584),
+  { usedBytes: 16_694_595_584 - 9_876_544 * 1024, totalBytes: 16_694_595_584 },
+  "Linux memory in use is total less MemAvailable",
+);
+assert.throws(() => parseMeminfo(meminfo.replace(/MemAvailable.*\n/, ""), 1), "meminfo without MemAvailable throws");
 assert.deepEqual(
   parseDf(fixture("df.txt")),
   { freeBytes: 337_503_380 * 1024, totalBytes: 971_298_980 * 1024 },
@@ -99,9 +106,9 @@ const path = process.env.PATH;
 process.env.PATH = "/nonexistent";
 try {
   assert.deepEqual(
-    await identify(),
+    await identify(undefined, "/nonexistent/machine-id"),
     { id: `hostname:${hostname()}`, name: hostname(), idFrom: "hostname" },
-    "without ioreg the runner falls back to the host name instead of crashing",
+    "without ioreg or /etc/machine-id the runner falls back to the host name instead of crashing",
   );
 } finally {
   process.env.PATH = path;

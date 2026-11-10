@@ -28,7 +28,8 @@ const option = (name: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const checkout = resolve(option("--checkout") ?? join(import.meta.dirname, ".."));
-const LOG_PATH = join(homedir(), "Library/Logs/marshal-factory/runner.log");
+// Where install-runner sends the runner's output: the systemd service on Linux, the LaunchAgent on macOS.
+const LOG_PATH = join(homedir(), process.platform === "linux" ? ".local/state/marshal-factory/runner.log" : "Library/Logs/marshal-factory/runner.log");
 const ALREADY_STOPPED = "--runner-stopped";
 
 const t0 = Date.now();
