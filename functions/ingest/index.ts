@@ -15,7 +15,10 @@ attachDatabasePool(pool);
 const db = drizzle(pool, { schema });
 
 function authorized(request: Request) {
-  const expected = Buffer.from(`Bearer ${process.env.FACTORY_INGEST_SECRET}`);
+  // Without a secret, refuse everything rather than accept a literal "Bearer undefined".
+  const secret = process.env.FACTORY_INGEST_SECRET;
+  if (!secret) return false;
+  const expected = Buffer.from(`Bearer ${secret}`);
   const given = Buffer.from(request.headers.get("authorization") ?? "");
   return given.length === expected.length && timingSafeEqual(given, expected);
 }
@@ -55,7 +58,7 @@ async function sourceWebhook(source: JobSource, request: Request) {
   const { webhook } = sourceFor(source);
   if (!webhook) return Response.json({ error: "not found" }, { status: 404 });
   const raw = await request.text();
-  const verdict = webhook.verify(raw, request.headers, process.env[webhook.secretEnv]!);
+  const verdict = webhook.verify(raw, request.headers, process.env[webhook.secretEnv]);
   if (!verdict.ok) return Response.json({ error: verdict.reason }, { status: 401 });
   const deliveryId = request.headers.get(webhook.deliveryHeader);
   if (!deliveryId) return Response.json({ error: `missing ${webhook.deliveryHeader}` }, { status: 400 });
