@@ -42,6 +42,11 @@ async function waitUntilReachable(url: string) {
 function spawnInherit(command: string, args: string[], env: NodeJS.ProcessEnv) {
   return new Promise<number>((resolve) => {
     const child = spawn(command, args, { env, stdio: "inherit" });
+    // A missing executable emits "error" and never "close"; without this the run hangs.
+    child.on("error", (error) => {
+      console.error(`${command}: ${error.message}`);
+      resolve(1);
+    });
     child.on("close", (code) => resolve(code ?? 1));
   });
 }
@@ -92,10 +97,10 @@ try {
   };
   if (endpointOf(direct) !== endpoints[0]!.id) throw new Error("the connection string is not for the branch's endpoint");
   // The branch copies the parent's schema; regressions run against this checkout's migrations.
-  if ((await spawnInherit("bunx", ["drizzle-kit", "migrate"], env)) !== 0) throw new Error("migrating the test branch failed");
+  if ((await spawnInherit(process.execPath, ["x", "drizzle-kit", "migrate"], env)) !== 0) throw new Error("migrating the test branch failed");
   for (const script of scripts) {
     console.log(`\n== ${script}`);
-    if ((await spawnInherit("bun", [join("scripts", script)], env)) !== 0) failed.push(script);
+    if ((await spawnInherit(process.execPath, [join("scripts", script)], env)) !== 0) failed.push(script);
   }
 } finally {
   await deleteBranch();
