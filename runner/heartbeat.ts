@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpus, hostname, loadavg, totalmem } from "node:os";
+import { readFile } from "node:fs/promises";
+import { cpus, homedir, hostname, loadavg, totalmem } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { eq } from "drizzle-orm";
@@ -49,6 +50,13 @@ export function parseVmStat(output: string, totalBytes: number) {
   return { usedBytes, totalBytes };
 }
 
+/** Linux: MemAvailable already counts the page cache the kernel can reclaim. */
+export function parseMeminfo(output: string, totalBytes: number) {
+  const kb = Number(/^MemAvailable:\s+(\d+) kB$/m.exec(output)?.[1]);
+  if (!Number.isFinite(kb)) throw new Error("/proc/meminfo has no MemAvailable line");
+  return { usedBytes: totalBytes - kb * 1024, totalBytes };
+}
+
 export function parseDf(output: string) {
   const [header, row] = output.trim().split("\n");
   if (!header?.startsWith("Filesystem") || !header.includes("1024-blocks") || !row) throw new Error("df output has no 1024-blocks table");
@@ -67,8 +75,11 @@ const settle = <T>(collect: () => Promise<T>) => collect().catch((): typeof UNKN
 export function systemCollectors(capacity: () => Promise<Heartbeat["capacity"]>): HeartbeatCollectors {
   return {
     cpu: async () => ({ load1: loadavg()[0]!, cores: cpus().length }),
-    memory: async () => parseVmStat(await text("vm_stat", []), totalmem()),
-    disk: async () => parseDf(await text("df", ["-k", "/System/Volumes/Data"])),
+    memory: async () =>
+      process.platform === "linux"
+        ? parseMeminfo(await readFile("/proc/meminfo", "utf8"), totalmem())
+        : parseVmStat(await text("vm_stat", []), totalmem()),
+    disk: async () => parseDf(await text("df", ["-kP", process.platform === "linux" ? homedir() : "/System/Volumes/Data"])),
     capacity,
   };
 }
