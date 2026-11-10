@@ -29,7 +29,8 @@ const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const DELETED = "the issue was deleted in Linear";
 
 /** `Linear-Signature` is the hex HMAC-SHA256 of the raw body; the timestamp check comes after it. */
-function verifyLinear(rawBody: string, signature: string | null, secret: string, now = Date.now()): Verdict {
+function verifyLinear(rawBody: string, signature: string | null, secret: string | undefined, now = Date.now()): Verdict {
+  if (!secret) return { ok: false, reason: "no webhook secret configured" };
   if (!signature || !sameHex(signature, hmacHex(secret, rawBody))) return { ok: false, reason: "bad signature" };
   const sent = (JSON.parse(rawBody) as { webhookTimestamp?: number }).webhookTimestamp;
   if (typeof sent !== "number" || Math.abs(now - sent) > LINEAR_MAX_SKEW_MS) {

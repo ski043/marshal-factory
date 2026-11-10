@@ -7,7 +7,7 @@ import { githubIntent, verifyGithub } from "../lib/webhooks";
 const { webhook } = sourceFor("linear");
 if (!webhook) throw new Error("the linear source has no webhook");
 const headers = (signature: string | null) => new Headers(signature ? { "linear-signature": signature } : {});
-const verifyLinear = (raw: string, signature: string | null, secret: string, at: number) => webhook.verify(raw, headers(signature), secret, at);
+const verifyLinear = (raw: string, signature: string | null, secret: string | undefined, at: number) => webhook.verify(raw, headers(signature), secret, at);
 
 const secret = "s3cret";
 const sign = (body: string) => createHmac("sha256", secret).update(body).digest("hex");
@@ -17,6 +17,7 @@ const linearBody = JSON.stringify({ action: "update", type: "Issue", webhookTime
 assert.deepEqual(verifyLinear(linearBody, sign(linearBody), secret, now), { ok: true });
 assert.equal(verifyLinear(linearBody, sign(linearBody + " "), secret, now).ok, false, "a wrong signature is rejected");
 assert.equal(verifyLinear(linearBody, null, secret, now).ok, false, "a missing signature is rejected");
+assert.deepEqual(verifyLinear(linearBody, sign(linearBody), undefined, now), { ok: false, reason: "no webhook secret configured" }, "an unset secret rejects instead of throwing");
 const old = JSON.stringify({ action: "update", type: "Issue", webhookTimestamp: now - 61_000, data: {} });
 assert.deepEqual(verifyLinear(old, sign(old), secret, now), { ok: false, reason: "stale webhookTimestamp" }, "a replay older than a minute is rejected");
 assert.equal(verifyGithub("{}", `sha256=${sign("{}")}`, secret).ok, true);
