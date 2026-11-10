@@ -45,7 +45,7 @@ export interface SourceWebhook {
   secretEnv: string;
   deliveryHeader: string;
   eventHeader: string;
-  verify(raw: string, headers: Headers, secret: string, now?: number): Verdict;
+  verify(raw: string, headers: Headers, secret: string | undefined, now?: number): Verdict;
   /** What a delivery means; `env` is the ingest function's, where the source reads its own scope (Linear: team key and label). */
   intent(body: unknown, env: Readonly<Record<string, string | undefined>>): IntentDraft | null;
 }
